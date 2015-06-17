@@ -1,0 +1,116 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:root {
+  padding: 1em;
+}
+.newtab-thumbnail {
+  background-origin: padding-box;
+  background-clip: padding-box;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+}
+:root[theme="dark"] .newtab-thumbnail {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+:root.containThumbs .newtab-thumbnail {
+  background-size: contain;
+  background-position: 50% 50%;
+}
+
+/* OPTIONS */
+toolbarbutton {
+  -moz-appearance: none;
+  border: none;
+}
+groupbox {
+  -moz-appearance: none;
+  border: none;
+}
+caption {
+  margin: 0;
+  font-weight: bold;
+}
+button {
+  min-width: 0;
+  -moz-margin-start: 0;
+  -moz-margin-end: 0;
+}
+#options-tile {
+  -moz-margin-end: 2em;
+}
+#options-previous-row-tile {
+  margin-top: -1.5em;
+  list-style-image: url("arrow.svg");
+  transform: rotate(90deg);
+}
+#options-previous-tile {
+  list-style-image: url("arrow.svg");
+}
+#options-next-tile {
+  list-style-image: url("arrow.svg");
+  transform: scalex(-1);
+}
+#options-next-row-tile {
+  list-style-image: url("arrow.svg");
+  transform: rotate(-90deg);
+}
+#options-thumbnail-wrap {
+  margin: 0 1em;
+}
+#options-thumbnail {
+  width: 200px;
+  height: 150px;
+  margin: 0 auto;
+  opacity: 1;
+  position: static;
+  -moz-box-flex: 1;
+}
+#options-url {
+  text-align: center;
+}
+#options-bgcolor-input {
+  visibility: collapse;
+}
+#options-bgcolor-display {
+  width: 24px;
+  outline: 1px currentcolor solid;
+}
+setting {
+  display: -moz-grid-line;
+  -moz-box-align: baseline;
+}
+setting[type="bool"] {
+  -moz-binding: url("chrome://mozapps/content/extensions/setting.xml#setting-bool");
+}
+setting[type="integer"] {
+  -moz-binding: url("chrome://mozapps/content/extensions/setting.xml#setting-integer");
+}
+setting[type="control"] {
+  -moz-binding: url("chrome://mozapps/content/extensions/setting.xml#setting-control");
+}
+setting[type="menulist"],
+setting[type="radio"] {
+  -moz-binding: url("setting.xml#setting-multi");
+}
+.preferences-alignment {
+  min-height: 30px;
+  -moz-box-align: center;
+}
+.preferences-learnmore,
+.preferences-description {
+  display: none;
+}
+#options-donate-wrap {
+  border: 1px #b2aeaa solid !important;
+  background-color: #f9f9f9;
+}
+#options-donate-wrap > :first-child {
+  margin: 0.5em 0.5em 0;
+}
+#options-donate-wrap > :last-child {
+  margin: 0 0.5em 0.5em;
+}

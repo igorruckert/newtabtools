@@ -3,9 +3,10 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at http://mozilla.org/MPL/2.0/.
 */
-/* globals Services, XPCOMUtils, FileUtils, NetUtil, SessionStore, OS, PageThumbs, PageThumbsStorage,
-    PageThumbUtils, PlacesUtils, PrivateBrowsingUtils, SavedThumbs, TileData, HTML_NAMESPACE,
-    gPinnedLinks, gBlockedLinks, gTransformation, gGridPrefs, gGrid, gDrag, gUpdater, gUndoDialog */
+/* globals Services, XPCOMUtils,
+    FileUtils, NetUtil, SessionStore, OS, PageThumbs, PageThumbsStorage, PageThumbUtils,
+    PlacesUtils, PrivateBrowsingUtils, SavedThumbs, TileData,
+    gDrag, gGrid, gBlockedLinks, gPinnedLinks, gTransformation, gUpdater, HTML_NAMESPACE */
 
 let { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
@@ -24,157 +25,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "TileData", "chrome://newtabtools/conten
 XPCOMUtils.defineLazyServiceGetter(this, "faviconService", "@mozilla.org/browser/favicon-service;1", "mozIAsyncFavicons");
 
 let newTabTools = {
-  launcherOnClick: function(event) {
-    switch (event.originalTarget.id) {
-    case "downloads":
-      newTabTools.browserWindow.BrowserDownloadsUI();
-      break;
-    case "bookmarks":
-      newTabTools.browserWindow.PlacesCommandHook.showPlacesOrganizer("AllBookmarks");
-      break;
-    case "history":
-      newTabTools.browserWindow.PlacesCommandHook.showPlacesOrganizer("History");
-      break;
-    case "addons":
-      newTabTools.browserWindow.BrowserOpenAddonsMgr();
-      break;
-    case "sync":
-      newTabTools.browserWindow.openPreferences("paneSync");
-      break;
-    case "settingsWin":
-    case "settingsUnix":
-      newTabTools.browserWindow.openPreferences();
-      break;
-    case "restorePreviousSession":
-      SessionStore.restoreLastSession();
-      break;
-    }
-  },
-  get selectedSite() {
-    return gGrid.sites[this._selectedSiteIndex];
-  },
-  optionsOnClick: function(event) {
-    if (event.originalTarget.disabled) {
-      return;
-    }
-    let id = event.originalTarget.id;
-    switch (id) {
-    case "options-pinURL":
-      let link = this.pinURLInput.value;
-      let linkURI = Services.io.newURI(link, null, null);
-      event.originalTarget.disabled = true;
-      PlacesUtils.promisePlaceInfo(linkURI).then(function(info) {
-        newTabTools.pinURL(linkURI.spec, info.title);
-        newTabTools.pinURLInput.value = "";
-        event.originalTarget.disabled = false;
-      }, function() {
-        newTabTools.pinURL(linkURI.spec, "");
-        newTabTools.pinURLInput.value = "";
-        event.originalTarget.disabled = false;
-      }).then(null, Cu.reportError);
-      break;
-    case "options-previous-row-tile":
-      this.selectedSiteIndex = (this._selectedSiteIndex - gGridPrefs.gridColumns + gGrid.cells.length) % gGrid.cells.length;
-      break;
-    case "options-previous-tile":
-    case "options-next-tile":
-      let { gridColumns } = gGridPrefs;
-      let row = Math.floor(this._selectedSiteIndex / gridColumns);
-      let column = (this._selectedSiteIndex + (id == "options-previous-tile" ? -1 : 1) + gridColumns) % gridColumns;
-
-      this.selectedSiteIndex = row * gridColumns + column;
-      break;
-    case "options-next-row-tile":
-      this.selectedSiteIndex = (this._selectedSiteIndex + gGridPrefs.gridColumns) % gGrid.cells.length;
-      break;
-    case "options-thumbnail-browse":
-    case "options-bg-browse":
-      let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
-      fp.init(window, document.title, Ci.nsIFilePicker.modeOpen);
-      fp.appendFilters(Ci.nsIFilePicker.filterImages);
-      if (fp.show() == Ci.nsIFilePicker.returnOK) {
-        if (id == "options-thumbnail-browse") {
-          this.setThumbnailInput.value = fp.fileURL.spec;
-          newTabTools.setThumbnailButton.disabled = false;
-        } else {
-          this.setBackgroundInput.value = fp.fileURL.spec;
-          newTabTools.setBackgroundButton.disabled = false;
-        }
-      }
-      break;
-    case "options-thumbnail-set":
-      this.setThumbnail(this.selectedSite, this.setThumbnailInput.value);
-      break;
-    case "options-thumbnail-remove":
-      this.setThumbnail(this.selectedSite, null);
-      break;
-    case "options-thumbnail-refresh":
-      event.originalTarget.disabled = true;
-      SavedThumbs.forceReloadThumbnail(this.selectedSite.url).then(function() {
-        event.originalTarget.disabled = false;
-      });
-      break;
-    case "options-bgcolor-displaybutton":
-      this.setBgColourInput.click();
-      break;
-    case "options-bgcolor-set":
-      TileData.set(this.selectedSite.url, "backgroundColor", this.setBgColourInput.value);
-      this.siteThumbnail.style.backgroundColor = this.setBgColourInput.value;
-      this.resetBgColourButton.disabled = false;
-      break;
-    case "options-bgcolor-reset":
-      TileData.set(this.selectedSite.url, "backgroundColor", null);
-      this.siteThumbnail.style.backgroundColor =
-        this.setBgColourInput.value =
-        this.setBgColourDisplay.style.backgroundColor = null;
-      this.setBgColourButton.disabled =
-        this.resetBgColourButton.disabled = true;
-      break;
-    case "options-title-set":
-      this.setTitle(this.selectedSite, this.setTitleInput.value);
-      break;
-    case "options-title-reset":
-      this.setTitle(this.selectedSite, null);
-      break;
-    case "options-bg-set":
-      if (this.setBackgroundInput.value) {
-        let fos = FileUtils.openSafeFileOutputStream(this.backgroundImageFile);
-        NetUtil.asyncFetch(this.setBackgroundInput.value, function(inputStream, status) {
-          if (!Components.isSuccessCode(status)) {
-            return;
-          }
-          NetUtil.asyncCopy(inputStream, fos, function() {
-            FileUtils.closeSafeFileOutputStream(fos);
-            Services.obs.notifyObservers(null, "newtabtools-change", "background");
-          }.bind(this));
-        }.bind(this));
-      }
-      break;
-    case "options-bg-remove":
-      if (this.backgroundImageFile.exists())
-        this.backgroundImageFile.remove(true);
-      Services.obs.notifyObservers(null, "newtabtools-change", "background");
-      break;
-    case "options-donate":
-      let url = "https://addons.mozilla.org/addon/new-tab-tools/about";
-      newTabTools.browserWindow.openLinkIn(url, "current", {});
-      break;
-    }
-  },
-  pinURL: function(link, title) {
-    let index = gGrid.sites.length - 1;
-    for (var i = 0; i < gGrid.sites.length; i++) {
-      let s = gGrid.sites[i];
-      if (s && !s.isPinned()) {
-        index = i;
-        break;
-      }
-    }
-
-    gBlockedLinks.unblock(link);
-    gPinnedLinks.pin({url: link, title: title}, index);
-    gUpdater.updateGrid();
-  },
   onTileChanged: function(url, whatChanged) {
     for (let site of gGrid.sites) {
       if (site.url == url) {
@@ -184,69 +34,12 @@ let newTabTools = {
           break;
         case "thumbnail":
           site.refreshThumbnail();
-          this.selectedSiteIndex = this._selectedSiteIndex;
           break;
         case "title":
           site._addTitleAndFavicon();
           break;
         }
       }
-    }
-  },
-  setThumbnail: function(site, src) {
-    let leafName = SavedThumbs.getThumbnailLeafName(site.url);
-    let path = SavedThumbs.getThumbnailPath(site.url, leafName);
-    let file = FileUtils.File(path);
-    let existed = SavedThumbs.hasSavedThumb(site.url, leafName);
-    if (existed) {
-      file.permissions = 0644;
-      file.remove(true);
-    }
-
-    if (!src) {
-      if (!existed) {
-        path = PageThumbsStorage.getFilePathForURL(site.url);
-        file = FileUtils.File(path);
-        if (file.exists()) {
-          file.permissions = 0644;
-          file.remove(true);
-        }
-      }
-
-      SavedThumbs.removeSavedThumb(site.url, leafName);
-      this.removeThumbnailButton.blur();
-      return;
-    }
-
-    let image = new Image();
-    image.onload = function() {
-      let [thumbnailWidth, thumbnailHeight] = "_getThumbnailSize" in PageThumbs ? PageThumbs._getThumbnailSize() : PageThumbUtils.getThumbnailSize();
-      let scale = Math.max(thumbnailWidth / image.width, thumbnailHeight / image.height);
-
-      let canvas = document.createElementNS(HTML_NAMESPACE, "canvas");
-      canvas.mozOpaque = false;
-      canvas.mozImageSmoothingEnabled = true;
-      canvas.width = image.width * scale;
-      canvas.height = image.height * scale;
-      let ctx = canvas.getContext("2d");
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      canvas.mozFetchAsStream(function(aInputStream) {
-        let outputStream = FileUtils.openSafeFileOutputStream(file);
-        NetUtil.asyncCopy(aInputStream, outputStream, function() {
-          FileUtils.closeSafeFileOutputStream(outputStream);
-          SavedThumbs.addSavedThumb(site.url, leafName);
-        });
-      }, "image/png");
-    };
-    image.src = src;
-  },
-  setTitle: function(site, title) {
-    TileData.set(site.url, "title", title);
-    this.resetTitleButton.disabled = !title;
-    if (!title) {
-      this.setTitleInput.value = site.title;
-      this.resetTitleButton.blur();
     }
   },
   get backgroundImageFile() {
@@ -260,12 +53,9 @@ let newTabTools = {
       this.page.style.backgroundImage =
         'url("' + this.backgroundImageURL.spec + '?' + this.backgroundImageFile.lastModifiedTime + '")';
       document.documentElement.classList.add("background");
-      this.removeBackgroundButton.disabled = false;
     } else {
       this.page.style.backgroundImage = null;
       document.documentElement.classList.remove("background");
-      this.removeBackgroundButton.disabled = true;
-      this.removeBackgroundButton.blur();
     }
   },
   updateUI: function() {
@@ -415,70 +205,8 @@ let newTabTools = {
     }
     this.onVisible = function() {};
   },
-  set selectedSiteIndex(index) {
-    this._selectedSiteIndex = index;
-    let site = this.selectedSite;
-    let disabled = site == null;
-
-    this.browseThumbnailButton.disabled = disabled;
-    this.setThumbnailInput.value = "";
-    this.setThumbnailInput.disabled = disabled;
-    this.setTitleInput.disabled = disabled;
-    this.setTitleButton.disabled = disabled;
-
-    if (disabled) {
-      this.siteThumbnail.style.backgroundImage = null;
-      this.removeThumbnailButton.disabled = true;
-      this.siteURL.value = "";
-      this.setTitleInput.value = "";
-      this.resetTitleButton.disabled = true;
-      return;
-    }
-
-    SavedThumbs.getThumbnailURL(site.url).then((thumbnail) => {
-      this.siteThumbnail.style.backgroundImage = 'url("' + thumbnail + '")';
-      if (thumbnail.startsWith("file:")) {
-        this.removeThumbnailButton.disabled = false;
-        this.captureThumbnailButton.disabled = true;
-      } else {
-        OS.File.exists(PageThumbsStorage.getFilePathForURL(site.url)).then((exists) => {
-          this.removeThumbnailButton.disabled = !exists;
-          this.captureThumbnailButton.disabled = false;
-        });
-      }
-    });
-
-    let { gridRows, gridColumns } = gGridPrefs;
-    let row = Math.floor(index / gridColumns);
-    let column = index % gridColumns;
-    this.tilePreviousRow.style.opacity = row == 0 ? 0.25 : null;
-    this.tilePrevious.style.opacity = column == 0 ? 0.25 : null;
-    this.tileNext.style.opacity = (column + 1 == gridColumns) ? 0.25 : null;
-    this.tileNextRow.style.opacity = (row + 1 == gridRows) ? 0.25 : null;
-
-    this.siteURL.value = site.url;
-    let backgroundColor = TileData.get(site.url, "backgroundColor");
-    this.siteThumbnail.style.backgroundColor =
-      this.setBgColourInput.value =
-      this.setBgColourDisplay.style.backgroundColor = backgroundColor;
-    this.setBgColourButton.disabled =
-      this.resetBgColourButton.disabled = !backgroundColor;
-    let title = TileData.get(site.url, "title");
-    this.setTitleInput.value = title || site.title || site.url;
-    this.resetTitleButton.disabled = title === null;
-  },
-  toggleOptions: function() {
-    if (document.documentElement.hasAttribute("options-hidden")) {
-      this.optionsTogglePointer.hidden = true;
-      this.prefs.setBoolPref("optionspointershown", true);
-      document.documentElement.removeAttribute("options-hidden");
-      this.selectedSiteIndex = 0;
-    } else {
-      this.hideOptions();
-    }
-  },
-  hideOptions: function() {
-    document.documentElement.setAttribute("options-hidden", "true");
+  showOptions: function() {
+    document.dispatchEvent(new CustomEvent("NewTabTools:ShowOptions", { bubbles: true }));
   }
 };
 
@@ -510,32 +238,8 @@ let newTabTools = {
     "launcher": "launcher",
     "optionsToggleButton": "options-toggle",
     "optionsTogglePointer": "options-toggle-pointer",
-    "pinURLInput": "options-pinURL-input",
-    "tilePreviousRow": "options-previous-row-tile",
-    "tilePrevious": "options-previous-tile",
-    "tileNext": "options-next-tile",
-    "tileNextRow": "options-next-row-tile",
-    "siteThumbnail": "options-thumbnail",
-    "siteURL": "options-url",
-    "browseThumbnailButton": "options-thumbnail-browse",
-    "setThumbnailInput": "options-thumbnail-input",
-    "setThumbnailButton": "options-thumbnail-set",
-    "removeThumbnailButton": "options-thumbnail-remove",
-    "captureThumbnailButton": "options-thumbnail-refresh",
-    "setBgColourInput": "options-bgcolor-input",
-    "setBgColourDisplay": "options-bgcolor-display",
-    "setBgColourButton": "options-bgcolor-set",
-    "resetBgColourButton": "options-bgcolor-reset",
-    "setTitleInput": "options-title-input",
-    "resetTitleButton": "options-title-reset",
-    "setTitleButton": "options-title-set",
-    "setBackgroundInput": "options-bg-input",
-    "setBackgroundButton": "options-bg-set",
-    "removeBackgroundButton": "options-bg-remove",
     "recentList": "newtab-recent",
-    "recentListOuter": "newtab-recent-outer",
-    "optionsBackground": "options-bg",
-    "optionsPane": "options"
+    "recentListOuter": "newtab-recent-outer"
   };
   for (let key in uiElements) {
     let value = uiElements[key];
@@ -550,24 +254,7 @@ let newTabTools = {
     newTabTools.optionsToggleButton.title = document.getElementById("settingsUnix").textContent;
   }
 
-  newTabTools.optionsToggleButton.addEventListener("click", newTabTools.toggleOptions.bind(newTabTools), false);
-  newTabTools.optionsPane.addEventListener("click", newTabTools.optionsOnClick.bind(newTabTools), false);
-  newTabTools.launcher.addEventListener("click", newTabTools.launcherOnClick, false);
-  newTabTools.setThumbnailInput.addEventListener("keyup", function() {
-    newTabTools.setThumbnailButton.disabled = !/^(file|ftp|http|https):\/\//.exec(this.value);
-  });
-  newTabTools.setBgColourInput.addEventListener("change", function() {
-    newTabTools.setBgColourDisplay.style.backgroundColor = this.value;
-    newTabTools.setBgColourButton.disabled = false;
-  });
-  newTabTools.setBackgroundInput.addEventListener("keyup", function() {
-    newTabTools.setBackgroundButton.disabled = !/^(file|ftp|http|https):\/\//.exec(this.value);
-  });
-  window.addEventListener("keypress", function(event) {
-    if (event.keyCode == 27) {
-      newTabTools.hideOptions();
-    }
-  });
+  newTabTools.optionsToggleButton.addEventListener("click", newTabTools.showOptions.bind(newTabTools), false);
 
   newTabTools.refreshBackgroundImage();
   newTabTools.updateUI();
@@ -635,4 +322,6 @@ let newTabTools = {
       newTabTools.trimRecent();
     };
   }, false);
+
+  document.dispatchEvent(new CustomEvent("NewTabTools:PageLoad", { bubbles: true }));
 })();

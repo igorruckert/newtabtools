@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this file,
+You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+<!DOCTYPE html [
+  <!ENTITY % newTabDTD SYSTEM "chrome://browser/locale/newTab.dtd">
+  %newTabDTD;
+  <!ENTITY % aboutHomeDTD SYSTEM "chrome://newtabtools/locale/aboutHome.dtd">
+  %aboutHomeDTD;
+  <!ENTITY % browserDTD SYSTEM "chrome://browser/locale/browser.dtd">
+  %browserDTD;
+  <!ENTITY % newTabToolsDTD SYSTEM "chrome://newtabtools/locale/newTab.dtd">
+  %newTabToolsDTD;
+  <!ENTITY % optionsDTD SYSTEM "chrome://newtabtools/locale/options.dtd">
+  %optionsDTD;
+  <!ENTITY % globalDTD SYSTEM "chrome://global/locale/global.dtd">
+  %globalDTD;
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>&newtab.pageTitle;</title>
+    <link rel="stylesheet" href="chrome://newtabtools/content/newTab.css" type="text/css" />
+    <link rel="stylesheet" href="chrome://newtabtools/skin/newTab.css" type="text/css" />
+  </head>
+
+  <body dir="&locale.dir;">
+    <div id="newtab-scrollbox">
+      <div id="newtab-vertical-margin">
+        <div id="newtab-margin-top" align="end">
+          <div id="newtab-margin-left-top" class="newtab-side-margin"></div>
+          <div id="newtab-recent-outer">
+            <div id="newtab-recent" hidden="true"><span>&newtabtools.recently-closed-tabs;</span></div>
+          </div>
+          <div id="newtab-undo-container" undo-disabled="true">
+            <label id="newtab-undo-label">&newtab.undo.removedLabel;</label>
+            <button id="newtab-undo-button" tabindex="-1"
+                    class="newtab-undo-button">&newtab.undo.undoButton;</button>
+            <button id="newtab-undo-restore-button" tabindex="-1"
+                    class="newtab-undo-button">&newtab.undo.restoreButton;</button>
+            <button id="newtab-undo-close-button" tabindex="-1" title="&newtab.undo.closeTooltip;" />
+          </div>
+          <div id="newtab-margin-right-top" class="newtab-side-margin" />
+        </div>
+        <div id="newtab-horizontal-margin">
+          <div id="newtab-margin-left-bottom" class="newtab-side-margin" />
+          <div id="newtab-grid" />
+          <div id="newtab-margin-right-bottom" class="newtab-side-margin" />
+        </div>
+        <div id="newtab-margin-bottom" />
+      </div>
+
+      <input id="options-toggle" type="button" />
+      <input id="newtab-toggle" type="button" title="&newtabtools.page.show;" />
+
+      <div id="launcher">
+        <button class="launchButton" id="downloads">&abouthome.downloadsButton.label;</button>
+        <button class="launchButton" id="bookmarks">&abouthome.bookmarksButton.label;</button>
+        <button class="launchButton" id="history">&abouthome.historyButton.label;</button>
+        <button class="launchButton" id="addons">&abouthome.addonsButton.label;</button>
+        <button class="launchButton" id="sync">&abouthome.syncButton.label;</button>
+        <button class="launchButton" id="settingsWin">&abouthome.preferencesButtonWin.label;</button>
+        <button class="launchButton" id="settingsUnix">&abouthome.preferencesButtonUnix.label;</button>
+        <button class="launchButton" id="restorePreviousSession">&historyRestoreLastSession.label;</button>
+      </div>
+    </div>
+    <script type="text/javascript;version=1.8" src="chrome://newtabtools/content/newTab.js"></script>
+    <script type="text/javascript;version=1.8" src="chrome://newtabtools/content/fx-newTab.js"></script>
+  </body>
+</html>

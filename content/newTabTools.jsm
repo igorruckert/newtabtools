@@ -1,4 +1,4 @@
-const EXPORTED_SYMBOLS = ["TileData", "SavedThumbs"];
+const EXPORTED_SYMBOLS = ["NewTabToolsUtils", "TileData", "SavedThumbs"];
 const PREF = "extensions.newtabtools.tiledata";
 
 Components.utils.import("resource://gre/modules/Services.jsm");
@@ -11,12 +11,15 @@ XPCOMUtils.defineLazyModuleGetter(this, "PageThumbs", "resource://gre/modules/Pa
 XPCOMUtils.defineLazyModuleGetter(this, "PageThumbsStorage", "resource://gre/modules/PageThumbs.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Promise", "resource://gre/modules/Promise.jsm");
 
-function notifyTileChanged(url, key) {
-  let urlString = Components.classes["@mozilla.org/supports-string;1"]
-    .createInstance(Components.interfaces.nsISupportsString);
-  urlString.data = url;
-  Services.obs.notifyObservers(urlString, "newtabtools-change", key);
+if (Services.appinfo.processType == Services.appinfo.PROCESS_TYPE_DEFAULT) {
+  Services.ppmm.loadProcessScript("chrome://newtabtools/content/process.js", true);
 }
+
+let NewTabToolsUtils = {
+  notifyObservers: function(url, key) {
+    Services.ppmm.broadcastAsyncMessage("NewTabTools:Change", { url: url, key: key });
+  }
+};
 
 let TileData = {
   _data: new Map(),
@@ -41,7 +44,7 @@ let TileData = {
       }
     }
 
-    notifyTileChanged(url, key);
+    NewTabToolsUtils.notifyObservers(url, key);
     this._setPref();
   },
   _getPref: function() {
@@ -94,14 +97,14 @@ let SavedThumbs = {
   // These functions assume _readDir has already been called.
   addSavedThumb: function(url, leafName=this.getThumbnailLeafName(url)) {
     this._list.add(leafName);
-    notifyTileChanged(url, "thumbnail");
+    NewTabToolsUtils.notifyObservers(url, "thumbnail");
   },
   hasSavedThumb: function(url, leafName=this.getThumbnailLeafName(url)) {
     return this._list.has(leafName);
   },
   removeSavedThumb: function(url, leafName=this.getThumbnailLeafName(url)) {
     this._list.delete(leafName);
-    notifyTileChanged(url, "thumbnail");
+    NewTabToolsUtils.notifyObservers(url, "thumbnail");
   },
   _readDirPromises: [],
   _readDir: function() {
@@ -131,7 +134,7 @@ let SavedThumbs = {
       OS.File.remove(path).then(function() {
         BackgroundPageThumbs.capture(url, {
           onDone: function() {
-            notifyTileChanged(url, "thumbnail");
+            NewTabToolsUtils.notifyObservers(url, "thumbnail");
             resolve();
           }
         });

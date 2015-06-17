@@ -347,6 +347,12 @@ windowObserver = {
         menu.insertBefore(menuitem, before);
         before = menuitem;
       }
+
+      let mm = aWindow.getGroupMessageManager("browsers");
+      mm.loadFrameScript("chrome://newtabtools/content/content.js", true);
+      mm.addMessageListener("NewTabTools:ShowOptions", function() {
+        aWindow.openDialog("chrome://newtabtools/content/options.xul", "newTabTools-options", "chrome,centerscreen");
+      });
     }
   },
   unpaint: function(aWindow) {
@@ -359,6 +365,9 @@ windowObserver = {
       for (let item of menu.querySelectorAll(".newtabtools-item")) {
         item.remove();
       }
+
+      let mm = aWindow.getGroupMessageManager("browsers");
+      mm.removeDelayedFrameScript("chrome://newtabtools/content/content.js");
     }
   },
   onTabOpen: function(aEvent) {
@@ -421,7 +430,8 @@ windowObserver = {
   findCellTarget: function(aDocument) {
     // This probably isn't going to work once about:newtab is put in a content process.
     let target = aDocument.popupNode;
-    if (!target || target.ownerDocument.location.href != "about:newtab") {
+    if (!target || (target.ownerDocument.location.href != "about:newtab" &&
+        target.ownerDocument.location.href != "chrome://newtabtools/content/newTab.xhtml")) {
       return null;
     }
 

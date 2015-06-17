@@ -1,4 +1,4 @@
-content newtabtools content/
+content newtabtools content/ contentaccessible=yes
 locale newtabtools en-US locale/en-US/
 locale newtabtools de locale/de/
 locale newtabtools el locale/el/
@@ -16,5 +16,5 @@ skin newtabtools classic/1.0 skin/linux/ os!=WINNT os!=Darwin
 skin newtabtools classic/1.0 skin/osx/ os=Darwin
 skin newtabtools classic/1.0 skin/windows/ os=WINNT
 
-override chrome://browser/content/newtab/newTab.xhtml chrome://newtabtools/content/newTab.xul
-override chrome://browser/content/newtab/newTab.xul chrome://newtabtools/content/newTab.xul
+override chrome://browser/content/newtab/newTab.xhtml chrome://newtabtools/content/newTab.xhtml
+override chrome://browser/content/newtab/newTab.xul chrome://newtabtools/content/newTab.xhtml
