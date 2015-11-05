@@ -202,7 +202,7 @@ let BackgroundImage = {
 		this.changeInterval = 0;
 
 		if (Services.prefs.getPrefType(BackgroundImage.PREF_DIRECTORY) == Services.prefs.PREF_STRING) {
-			this._directory = Services.prefs.getCharPref(BackgroundImage.PREF_DIRECTORY);
+			this.directory = Services.prefs.getCharPref(BackgroundImage.PREF_DIRECTORY);
 		} else {
 			return;
 		}
@@ -230,7 +230,7 @@ let BackgroundImage = {
 			this._state = 'loading';
 
 			this._list = [];
-			this._entriesForDir(this._directory).then(() => {
+			this._entriesForDir(this.directory).then(() => {
 				this._state = 'ready';
 				this._list.sort();
 				if (this.mode == BackgroundImage.MODE_FOLDER_SHARED) {
@@ -335,7 +335,9 @@ let BackgroundImage = {
 			if (this.mode == BackgroundImage.MODE_FOLDER_SHARED) {
 				this._startTimer();
 			}
-			Services.obs.notifyObservers(null, 'newtabtools-change', 'background');
+			if (data != BackgroundImage.PREF_MODE || this.mode != BackgroundImage.MODE_FOLDER_UNSHARED) {
+				Services.obs.notifyObservers(null, 'newtabtools-change', 'background');
+			}
 			break;
 		}
 	},

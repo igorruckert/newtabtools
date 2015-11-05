@@ -97,15 +97,12 @@ var newTabTools = {
 			break;
 		case 'options-thumbnail-browse':
 		case 'options-bg-browse':
-			let fp = Cc['@mozilla.org/filepicker;1'].createInstance(Ci.nsIFilePicker);
-			fp.init(window, document.title, Ci.nsIFilePicker.modeOpen);
-			fp.appendFilters(Ci.nsIFilePicker.filterImages);
-			if (fp.show() == Ci.nsIFilePicker.returnOK) {
+			if (this.filePicker.show() == Ci.nsIFilePicker.returnOK) {
 				if (id == 'options-thumbnail-browse') {
-					this.setThumbnailInput.value = fp.fileURL.spec;
+					this.setThumbnailInput.value = this.filePicker.fileURL.spec;
 					newTabTools.setThumbnailButton.disabled = false;
 				} else {
-					this.setBackgroundInput.value = fp.fileURL.spec;
+					this.setBackgroundInput.value = this.filePicker.fileURL.spec;
 					newTabTools.setBackgroundButton.disabled = false;
 				}
 			}
@@ -162,6 +159,25 @@ var newTabTools = {
 			if (this.backgroundImageFile.exists())
 			this.backgroundImageFile.remove(true);
 			Services.obs.notifyObservers(null, 'newtabtools-change', 'background');
+			break;
+		case 'options-bg-pane-button':
+			this.optionsDeck.selectedIndex = 1;
+			break;
+		case 'options-bg-mode-single':
+		case 'options-bg-mode-folder':
+		case 'options-bg-mode-shared':
+		case 'options-bg-mode-unshared':
+			this.prefs.setIntPref('background.mode', parseInt(event.originalTarget.value, 10));
+			this.setupBackgroundOptions();
+			break;
+		case 'options-bg-browse-folder':
+			if (this.directoryPicker.show() == Ci.nsIFilePicker.returnOK) {
+				this.backgroundFolder.value = this.directoryPicker.file.path;
+				this.prefs.setCharPref('background.directory', this.directoryPicker.file.path);
+			}
+			break;
+		case 'options-main-pane-button':
+			this.optionsDeck.selectedIndex = 0;
 			break;
 		case 'options-donate':
 			let url = 'https://addons.mozilla.org/addon/new-tab-tools/about';
@@ -546,12 +562,43 @@ var newTabTools = {
 		if (document.documentElement.hasAttribute('options-hidden')) {
 			this.optionsTogglePointer.hidden = true;
 			this.prefs.setBoolPref('optionspointershown', true);
-			this.backgroundOptions.hidden = this.themePref.hidden = !BackgroundImage.modeIsSingle;
+			this.optionsDeck.selectedIndex = 0;
+			if (BackgroundImage.modeIsSingle) {
+				this.themePref.hidden = false;
+				this.backgroundModeRadiogroup1.selectedIndex = 0;
+				this.backgroundModeRadiogroup2.selectedIndex = -1;
+			} else {
+				this.themePref.hidden = true;
+				this.backgroundModeRadiogroup1.selectedIndex = 1;
+				this.backgroundModeRadiogroup2.value = BackgroundImage.mode;
+			}
+			this.backgroundFolder.value = BackgroundImage.directory || '';
+			this.backgroundInterval.value = BackgroundImage.changeInterval;
+			this.themePref.hidden = !BackgroundImage.modeIsSingle;
+			this.setupBackgroundOptions();
 			document.documentElement.removeAttribute('options-hidden');
 			this.selectedSiteIndex = 0;
 		} else {
 			this.hideOptions();
 		}
+	},
+	setupBackgroundOptions: function() {
+		let selector = ' + * :-moz-any(radio, textbox, button, menulist)';
+		for (let c of document.querySelectorAll('#options-bg-mode1 > radio:not([selected])' + selector)) {
+			c.disabled = true;
+		}
+		if (BackgroundImage.modeIsSingle) {
+			this.browseBackgroundButton.disabled = false;
+			this.removeBackgroundButton.disabled = !this.backgroundImageFile.exists();
+		} else {
+			for (let c of document.querySelectorAll('#options-bg-mode1 > radio[selected]' + selector)) {
+				c.disabled = false;
+			}
+			this.backgroundInterval.disabled = BackgroundImage.mode != BackgroundImage.MODE_FOLDER_SHARED;
+		}
+	},
+	setBackgroundChangeInterval: function(interval) {
+		this.prefs.setIntPref('background.changeinterval', parseInt(interval, 10));
 	},
 	hideOptions: function() {
 		document.documentElement.setAttribute('options-hidden', 'true');
@@ -571,6 +618,25 @@ var newTabTools = {
 
 	XPCOMUtils.defineLazyGetter(newTabTools, 'browserWindow', function() {
 		return getTopWindow();
+	});
+
+	XPCOMUtils.defineLazyGetter(newTabTools, 'directoryPicker', function() {
+		let picker = Cc['@mozilla.org/filepicker;1'].createInstance(Ci.nsIFilePicker);
+		picker.init(window, document.title, Ci.nsIFilePicker.modeGetFolder);
+		if (this.backgroundFolder.value) {
+			picker.displayDirectory = new FileUtils.File(this.backgroundFolder.value);
+		} else {
+			picker.displayDirectory = Services.dirsvc.get('Desk', Ci.nsIFile);
+		}
+		return picker;
+	});
+
+	XPCOMUtils.defineLazyGetter(newTabTools, 'filePicker', function() {
+		let picker = Cc['@mozilla.org/filepicker;1'].createInstance(Ci.nsIFilePicker);
+		picker.init(window, document.title, Ci.nsIFilePicker.modeOpen);
+		picker.displayDirectory = Services.dirsvc.get('Desk', Ci.nsIFile);
+		picker.appendFilters(Ci.nsIFilePicker.filterImages);
+		return picker;
 	});
 
 	XPCOMUtils.defineLazyGetter(newTabTools, 'prefs', function() {
@@ -604,14 +670,19 @@ var newTabTools = {
 		'setTitleInput': 'options-title-input',
 		'resetTitleButton': 'options-title-reset',
 		'setTitleButton': 'options-title-set',
-		'backgroundOptions': 'options-bg-group',
+		'backgroundModeRadiogroup1': 'options-bg-mode1',
+		'backgroundModeRadiogroup2': 'options-bg-mode2',
+		'browseBackgroundButton': 'options-bg-browse',
 		'setBackgroundInput': 'options-bg-input',
 		'setBackgroundButton': 'options-bg-set',
 		'removeBackgroundButton': 'options-bg-remove',
+		'backgroundFolder': 'options-bg-folder',
+		'backgroundInterval': 'options-bg-interval',
 		'themePref': 'options-theme-pref',
 		'recentList': 'newtab-recent',
 		'recentListOuter': 'newtab-recent-outer',
 		'optionsBackground': 'options-bg',
+		'optionsDeck': 'options-deck',
 		'optionsPane': 'options'
 	};
 	for (let key in uiElements) {
