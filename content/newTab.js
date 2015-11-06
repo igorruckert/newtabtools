@@ -184,8 +184,12 @@ var newTabTools = {
 				this.prefs.setCharPref('background.directory', this.directoryPicker.file.path);
 			}
 			break;
+		case 'options-bg-changenow':
+			BackgroundImage.change();
+			break;
 		case 'options-main-pane-button':
 			this.optionsDeck.selectedIndex = 0;
+			this.themePref.hidden = !BackgroundImage.modeIsSingle;
 			break;
 		case 'options-donate':
 			let url = 'https://addons.mozilla.org/addon/new-tab-tools/about';
@@ -582,7 +586,6 @@ var newTabTools = {
 			}
 			this.backgroundFolder.value = BackgroundImage.directory || '';
 			this.backgroundInterval.value = BackgroundImage.changeInterval;
-			this.themePref.hidden = !BackgroundImage.modeIsSingle;
 			this.setupBackgroundOptions();
 			document.documentElement.removeAttribute('options-hidden');
 			this.selectedSiteIndex = 0;

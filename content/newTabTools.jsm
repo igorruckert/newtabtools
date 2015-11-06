@@ -183,7 +183,7 @@ let SavedThumbs = {
 
 let BackgroundImage = {
 	MODE_SINGLE: 0, // old behaviour
-	MODE_FOLDER_SHARED: 1, // pick one, use for all (could _change regularly)
+	MODE_FOLDER_SHARED: 1, // pick one, use for all (could change regularly)
 	MODE_FOLDER_UNSHARED: 2, // new image each page
 	PREF_DIRECTORY: 'extensions.newtabtools.background.directory',
 	PREF_INTERVAL: 'extensions.newtabtools.background.changeinterval',
@@ -234,7 +234,7 @@ let BackgroundImage = {
 				this._state = 'ready';
 				this._list.sort();
 				if (this.mode == BackgroundImage.MODE_FOLDER_SHARED) {
-					return this._change();
+					return this.change();
 				}
 			}).then(() => {
 				this._initCallbacks.forEach(cb => cb.call());
@@ -279,7 +279,7 @@ let BackgroundImage = {
 			});
 		});
 	},
-	_change: function() {
+	change: function() {
 		this._pick().then(([url, theme]) => {
 			this.url = url;
 			this.theme = theme;
@@ -308,6 +308,11 @@ let BackgroundImage = {
 			// Only one time at once, please!
 			this._timer.cancel();
 			delete this._timer;
+			try {
+				idleService.removeIdleObserver(this, this.IDLE_TIME);
+			} catch (ex) {
+				// This might throw NS_ERROR_FAILURE.
+			}
 		}
 	},
 	wakeUp: function() {
@@ -321,7 +326,7 @@ let BackgroundImage = {
 		switch (topic) {
 		case 'idle':
 			idleService.removeIdleObserver(this, this.IDLE_TIME);
-			this._change();
+			this.change();
 			break;
 		case 'nsPref:changed':
 			this._readPrefs();
@@ -343,7 +348,7 @@ let BackgroundImage = {
 	},
 	_delayedChange: function() {
 		if (idleService.idleTime > this.IDLE_TIME * 1000) {
-			this._change();
+			this.change();
 		} else {
 			idleService.addIdleObserver(this, this.IDLE_TIME);
 		}

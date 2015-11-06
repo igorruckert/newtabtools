@@ -249,6 +249,7 @@ You can obtain one at http://mozilla.org/MPL/2.0/.
 											<xul:menuitem value="60" label="every hour" />
 										</xul:menupopup>
 									</xul:menulist>
+									<xul:button id="options-bg-changenow" label="Change now" />
 								</xul:hbox>
 							</xul:radiogroup>
 						</xul:vbox>
