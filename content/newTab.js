@@ -164,10 +164,18 @@ var newTabTools = {
 			this.optionsDeck.selectedIndex = 1;
 			break;
 		case 'options-bg-mode-single':
-		case 'options-bg-mode-folder':
 		case 'options-bg-mode-shared':
 		case 'options-bg-mode-unshared':
 			this.prefs.setIntPref('background.mode', parseInt(event.originalTarget.value, 10));
+			this.setupBackgroundOptions();
+			break;
+		case 'options-bg-mode-folder':
+			if (this.backgroundModeRadiogroup2.selectedIndex > -1) {
+				this.prefs.setIntPref('background.mode', parseInt(this.backgroundModeRadiogroup2.value, 10));
+			} else {
+				this.prefs.setIntPref('background.mode', 1);
+				this.backgroundModeRadiogroup2.value = 1;
+			}
 			this.setupBackgroundOptions();
 			break;
 		case 'options-bg-browse-folder':

@@ -226,7 +226,7 @@ You can obtain one at http://mozilla.org/MPL/2.0/.
 							<xul:button id="options-bg-set" label="&newtabtools.bg.set;" disabled="true" />
 							<xul:button id="options-bg-remove" label="&newtabtools.bg.remove;" disabled="true" />
 						</xul:hbox>
-						<xul:radio id="options-bg-mode-folder" value="1" label="Randomly chosen image from a directory" />
+						<xul:radio id="options-bg-mode-folder" label="Randomly chosen image from a directory" />
 						<xul:vbox class="indent">
 							<xul:hbox align="center">
 								<xul:textbox id="options-bg-folder" readonly="true" flex="1" crop="end" />
